@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BaaBoozle · Ramadan Words</title>
+<style>
+/* ═══════════ THEME (same layout metrics as the frog edition) ═══════════ */
+:root{
+  --bg:#0b1c30; --panel:#102842; --gold:#ffd600; --cyan:#4cc9ff;
+  /* --bw / --cw are recomputed at runtime so the 5x3 board always fits the window */
+  --bw: min(1400px, max(320px, calc((100vh - 330px) * 2.1)));
+  --cw: calc((var(--bw) - 40px) / 5);
+  --reserve: 180px;
+}
+@media (max-width:900px){
+  :root{
+    --bw: min(100%, max(320px, calc((100vh - 355px) * 2.1)));
+    --cw: calc((var(--bw) - 20px) / 5);
+    --reserve: 225px;
+  }
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{height:100%}
+body{
+  background:var(--bg); color:#eaf3ff; min-height:100%; overflow-y:auto;
+  font-family:"Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+  display:flex; flex-direction:column; align-items:center; gap:8px;
+  padding:10px 10px var(--reserve);   /* reserve = answer-bar space, nothing hides under it */
+}
+@media (max-width:900px){ body{ gap:6px; } }
+
+.topbar,.players,.status,.board{ width:100%; max-width:var(--bw); }
+
+/* ═══════════ TOPBAR ═══════════ */
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  flex-wrap:wrap; gap:8px; background:var(--panel);
+  border:2px solid #1d4670; border-radius:12px; padding:7px 12px;
+}
+.brand{font-size:clamp(14px,1.7vw,21px);font-weight:800;color:var(--gold);letter-spacing:.3px}
+.brand span{color:#eaf3ff}
+.tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.btn{
+  background:#17395f;color:#eaf3ff;border:2px solid #2d6da8;border-radius:9px;
+  padding:6px 12px;font-size:clamp(11px,1.3vw,14px);font-weight:700;cursor:pointer;
+  font-family:inherit;white-space:nowrap;
+}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn.off{opacity:.55;border-color:#274b6e;color:#9fb8d1}
+select.btn{padding:6px 8px;background:#0e2a47;max-width:200px}
+option{background:#0e2a47;color:#eaf3ff}
+
+/* ═══════════ SCOREBOARD ═══════════ */
+.players{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.team{
+  background:var(--panel);border:2px solid #1d4670;border-radius:12px;
+  padding:5px 4px;text-align:center;position:relative;min-width:0;
+}
+.team.turn{animation:blink 1s infinite}
+@keyframes blink{
+  0%,100%{box-shadow:0 0 0 2px #ffffff inset;background:#16324f}
+  50%{box-shadow:0 0 0 2px var(--gold) inset;background:#1d3d5f}
+}
+.team.lag{opacity:.5}
+.trow{display:flex;align-items:center;justify-content:center;gap:5px;min-width:0}
+.dot{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 5px rgba(0,0,0,.5)}
+.nm{font-size:clamp(11px,2.2vw,17px);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arrow{display:none;font-size:13px;color:var(--gold);font-weight:900}
+.team.turn .arrow{display:inline}
+.trow2{display:flex;align-items:baseline;justify-content:center;gap:8px;margin-top:1px}
+.sc{font-size:clamp(15px,2.2vw,23px);font-weight:900;color:var(--gold);line-height:1.1}
+.sc.pop{animation:pop .35s ease}
+@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.45);color:#fff}100%{transform:scale(1)}}
+.cn{font-size:clamp(10px,1.4vw,14px);color:#cfe6ff;font-weight:700}
+
+/* ═══════════ STATUS ═══════════ (one line only — legend row removed) */
+.status{
+  background:var(--panel);border:2px solid #1d4670;border-radius:12px;
+  min-height:44px;display:flex;align-items:center;justify-content:center;
+  gap:14px;padding:6px 10px;text-align:center;
+  font-size:clamp(12px,1.6vw,17px);font-weight:700;
+}
+.status b{color:var(--gold)}
+
+/* ═══════════ BOARD 5 × 3 ═══════════ */
+.board{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+@media (max-width:900px){ .board{gap:5px} }
+.card{position:relative;aspect-ratio:4/3;perspective:900px;cursor:pointer}
+.card.locked{cursor:default}
+.card-inner{
+  position:absolute;inset:0;transform-style:preserve-3d;
+  transition:transform .55s cubic-bezier(.25,.85,.3,1);
+}
+.card.flipped .card-inner{transform:rotateY(180deg)}   /* only the text face rotates */
+.face{
+  position:absolute;inset:0;border-radius:12px;border:3px solid #2f7fd0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;padding:6px;text-align:center;overflow:hidden;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+}
+@media (max-width:900px){ .face{border-radius:8px;border-width:2px;padding:3px} }
+/* ── blue card back (identical for every team) ── */
+.back{
+  background:linear-gradient(160deg,#6ec3ff 0%,#3f9bf0 55%,#2277d6 100%);
+  color:#06284d;border-color:#eaf7ff;box-shadow:0 4px 0 #175a9e;
+}
+.back .num{font-size:clamp(16px,calc(var(--cw)*.42),42px);font-weight:900;line-height:1}
+.back .pick{font-size:clamp(9px,calc(var(--cw)*.14),17px);font-weight:800;font-style:italic;opacity:.85}
+/* ── word face ── */
+.front{transform:rotateY(180deg);background:#123f70;border-color:#2f7fd0;color:#fff}
+.front.q{border-color:var(--gold);box-shadow:0 0 12px rgba(255,214,0,.35) inset}
+.word{font-size:clamp(12px,calc(var(--cw)/5),34px);font-weight:900;line-height:1.05;
+  overflow-wrap:break-word;word-break:normal;hyphens:auto;max-width:100%}
+.tag{position:absolute;top:4px;left:6px;font-size:clamp(8px,calc(var(--cw)*.1),13px);
+  font-weight:800;color:#9fd8ff;letter-spacing:.5px}
+.act-emoji{font-size:clamp(20px,calc(var(--cw)*.4),46px);line-height:1}
+.act-name{font-size:clamp(9px,calc(var(--cw)*.14),17px);font-weight:900;overflow-wrap:anywhere}
+.tick{position:absolute;top:3px;right:6px;font-size:clamp(11px,calc(var(--cw)*.18),22px);display:none}
+/* completed cards: change background/color directly (no filter/opacity, frame stays vivid) */
+.card.done .front{background:#08284a;border-color:var(--cyan);color:#dff2ff;box-shadow:none}
+.card.done.act .front{background:#143b62;border-color:#4d6d91;color:#9fc4e8;box-shadow:none}
+.card.done .tick{display:block}
+.card.done{cursor:default}
+.card.hit .front{animation:hit .4s ease}
+@keyframes hit{0%{transform:rotateY(180deg) scale(1)}45%{transform:rotateY(180deg) scale(1.09)}100%{transform:rotateY(180deg) scale(1)}}
+
+/* ═══════════ ANSWER BAR (fixed bottom) ═══════════ */
+.bar{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;display:none;
+  background:#0d2340;border-top:3px solid var(--gold);
+  padding:10px 12px;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;
+  box-shadow:0 -8px 24px rgba(0,0,0,.55);min-height:96px;
+}
+.bar.show{display:flex}
+.barinfo{font-size:clamp(12px,1.6vw,17px);font-weight:800;text-align:center;width:100%}
+.barinfo b{color:var(--gold)}
+.barinfo.good{color:#4ade80}
+.barinfo.bad{color:#ff8080}
+.opts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%}
+.opt{
+  flex:1 1 240px;max-width:420px;min-width:0;background:#17395f;color:#eaf3ff;
+  border:2px solid #2d6da8;border-radius:11px;padding:11px 14px;
+  font-size:clamp(12px,1.5vw,17px);font-weight:700;line-height:1.25;
+  cursor:pointer;font-family:inherit;text-align:center;overflow-wrap:anywhere;
+}
+.opt:hover:not(:disabled){border-color:var(--gold);color:var(--gold)}
+.opt:disabled{cursor:default;opacity:1}
+.opt.right{background:#0f5132;border-color:#4ade80;color:#d7ffe6}
+.opt.wrong{background:#5c1b1b;border-color:#ff6b6b;color:#ffd9d9}
+.picker{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%}
+.pbtn{
+  border-radius:11px;border:2px solid rgba(255,255,255,.35);color:#fff;
+  padding:10px 14px;font-size:clamp(12px,1.5vw,16px);font-weight:900;cursor:pointer;
+  font-family:inherit;display:flex;align-items:center;gap:7px;min-width:96px;justify-content:center;
+}
+.pbtn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.5)}
+.pbtn:disabled{opacity:.28;cursor:default}
+.hear{
+  background:#17395f;border:2px solid #2d6da8;border-radius:11px;color:#eaf3ff;
+  padding:10px 16px;font-size:clamp(12px,1.4vw,16px);font-weight:800;cursor:pointer;font-family:inherit;
+}
+.hear:hover{border-color:var(--gold);color:var(--gold)}
+.next{
+  background:var(--gold);color:#102842;border:none;border-radius:11px;
+  padding:11px 30px;font-size:clamp(14px,1.8vw,20px);font-weight:900;cursor:pointer;
+  font-family:inherit;box-shadow:0 4px 0 #b39b00;
+}
+.next:hover{transform:translateY(-2px)}
+.next:active{transform:translateY(2px);box-shadow:0 1px 0 #b39b00}
+
+/* ═══════════ RESULT MODAL ═══════════ */
+.modal{
+  position:fixed;inset:0;z-index:90;background:rgba(5,14,26,.94);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:18px;
+}
+.modal.show{display:flex}
+.mbox{
+  background:var(--panel);border:3px solid var(--gold);border-radius:18px;
+  padding:18px 22px;width:min(560px,100%);max-height:92vh;overflow:auto;text-align:center;
+}
+.trophy{font-size:clamp(44px,9vw,80px);line-height:1}
+.winner{font-size:clamp(20px,4vw,34px);font-weight:900;color:var(--gold);margin-bottom:2px}
+.sub{font-size:clamp(12px,1.6vw,16px);color:#a9c8e6;margin-bottom:12px}
+.rank{display:flex;align-items:center;gap:10px;background:#0e2a47;border-radius:11px;
+  padding:8px 12px;margin-bottom:7px;border:2px solid #1d4670}
+.medal{font-size:20px;width:34px;text-align:center;flex:none}
+.rdot{width:14px;height:14px;border-radius:50%;flex:none}
+.rname{font-size:clamp(14px,2vw,19px);font-weight:900;flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rscore{font-size:clamp(13px,1.9vw,18px);font-weight:900;color:var(--gold)}
+.rcoin{font-size:clamp(11px,1.5vw,14px);color:#a9c8e6;min-width:62px;text-align:right}
+.mbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.big{border-radius:12px;padding:12px 24px;font-size:clamp(14px,1.9vw,19px);font-weight:900;
+  cursor:pointer;font-family:inherit;border:none}
+.b1{background:var(--gold);color:#102842;box-shadow:0 4px 0 #b39b00}
+.b2{background:#17395f;color:#eaf3ff;border:2px solid #2d6da8}
+.big:hover{transform:translateY(-2px)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">🕌 BaaBoozle · <span id="themeName">Ramadan Words</span></div>
+  <div class="tools">
+    <button class="btn" id="btnRestart">Restart</button>
+    <button class="btn" id="btnSound">🔊 Sound: ON</button>
+    <button class="btn" id="btnVoice">🗣 Voice: ON</button>
+    <select class="btn" id="voiceSel" title="Choose an English voice"></select>
+  </div>
+</header>
+
+<section class="players" id="players"></section>
+<section class="status" id="status"></section>
+<main class="board" id="board"></main>
+
+<div class="bar" id="bar"></div>
+
+<div class="modal" id="modal">
+  <div class="mbox">
+    <div class="trophy">🏆</div>
+    <div class="winner" id="winnerLine"></div>
+    <div class="sub" id="winnerSub">Game over — final ranking</div>
+    <div id="rankList"></div>
+    <div class="mbtns">
+      <button class="big b1" id="btnAgain">▶ Play Again</button>
+      <button class="big b2" id="btnExit">✕ Exit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ═══════════════ DATA ═══════════════ */
+const THEME = "Ramadan Words";          /* change this one string to rename the game */
+const WORDS = [                          /* 7 English cards */
+  {en:"Muslims",   def:"people who follow the religion of Islam"},
+  {en:"calendar",  def:"a chart of the days, weeks, and months of the year"},
+  {en:"observing", def:"following or celebrating a special time"},
+  {en:"faith",     def:"a strong belief in a religion"},
+  {en:"community", def:"a group of people who live or do things together"},
+  {en:"hold back", def:"to stop yourself from doing something"},
+  {en:"holy",      def:"very special; connected to religion"}
+];
+const ACTIONS = [                         /* 8 function cards: the original 7 + a 2nd Bomb */
+  {kind:"plus50", emoji:"🎯", label:"+50 Points"},
+  {kind:"give",   emoji:"🎁", label:"Give Points"},
+  {kind:"steal",  emoji:"🐴", label:"Steal Points"},
+  {kind:"bomb",   emoji:"💣", label:"Bomb"},
+  {kind:"swap",   emoji:"🔄", label:"Swap Scores"},
+  {kind:"lucky",  emoji:"🍀", label:"Lucky"},
+  {kind:"double", emoji:"⭐", label:"Double"},
+  {kind:"bomb",   emoji:"💣", label:"Bomb"}
+];
+const TEAMS = [
+  {name:"Red",    color:"#ef4444", score:0, coins:0},
+  {name:"Blue",   color:"#3b82f6", score:0, coins:0},
+  {name:"Green",  color:"#22c55e", score:0, coins:0},
+  {name:"Purple", color:"#a855f7", score:0, coins:0},
+  {name:"Yellow", color:"#eab308", score:0, coins:0}
+];
+const MEDALS = ["🥇","🥈","🥉","4th","5th"];
+
+/* ═══════════════ STATE ═══════════════ */
+let deck = [], cur = 0, used = 0;
+let lock = false;      // true while a question / action is on screen (blocks flipping)
+let waiting = false;   // true after a wrong answer (blocks everything until Next ▶)
+let gameOver = false;
+let q = null;          // current question object
+let soundOn = true, voiceOn = true;
+
+const $ = id => document.getElementById(id);
+const boardEl = $("board"), playersEl = $("players"), statusEl = $("status"),
+      barEl = $("bar"), modalEl = $("modal");
+const shuffle = a => { a=a.slice(); for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+const esc = s => String(s).replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+
+/* ═══════════════ AUDIO (Web Audio API, no files) ═══════════════ */
+let AC = null;
+function ac(){
+  if(!AC){ try{ AC = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ return null; } }
+  if(AC.state === "suspended") AC.resume();
+  return AC;
+}
+function tone(freq, t0, dur, type, vol, slideTo){
+  const a = ac(); if(!a) return;
+  const o = a.createOscillator(), g = a.createGain(), t = a.currentTime + t0;
+  o.type = type || "sine";
+  o.frequency.setValueAtTime(freq, t);
+  if(slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), t + dur);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(a.destination);
+  o.start(t); o.stop(t + dur + 0.06);
+}
+function noise(t0, dur, vol, cut){
+  const a = ac(); if(!a) return;
+  const len = Math.max(1, Math.floor(a.sampleRate * dur));
+  const buf = a.createBuffer(1, len, a.sampleRate), d = buf.getChannelData(0);
+  for(let i=0;i<len;i++) d[i] = (Math.random()*2-1) * (1 - i/len);
+  const src = a.createBufferSource(); src.buffer = buf;
+  const f = a.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = cut || 900;
+  const g = a.createGain(); g.gain.value = vol;
+  src.connect(f); f.connect(g); g.connect(a.destination);
+  src.start(a.currentTime + t0);
+}
+function sfxClick(){ if(!soundOn) return; tone(680,0,.06,"square",.10); }
+function sfxCorrect(){ if(!soundOn) return; [523.25,659.25,783.99,1046.50].forEach((f,i)=>tone(f,i*.075,.22,"triangle",.17)); }
+function sfxWrong(){ if(!soundOn) return; tone(392,0,.24,"sawtooth",.15,300); tone(294,.22,.28,"sawtooth",.15,150); tone(147,.44,.42,"square",.12,90); }
+function sfxBig(){ if(!soundOn) return;
+  [130.81,261.63,523.25].forEach(f=>tone(f,0,.9,"sawtooth",.16));
+  [164.81,329.63,659.25].forEach(f=>tone(f,.12,.8,"square",.10));
+  noise(0,.35,.35,2400);
+  [659.25,783.99,1046.50,1318.5].forEach((f,i)=>tone(f,.45+i*.06,.3,"triangle",.16));
+}
+function sfxLucky(){ if(!soundOn) return; [783.99,987.77,1174.66].forEach((f,i)=>tone(f,i*.06,.2,"triangle",.15)); }
+function sfxSteal(){ if(!soundOn) return; tone(600,0,.7,"sine",.2,120); tone(300,.1,.65,"sine",.12,80); tone(150,.18,.5,"triangle",.14,60); }
+function sfxBomb(){ if(!soundOn) return;
+  noise(0,.55,.55,700); noise(.05,.4,.35,260);
+  [92,62,44,29].forEach((f,i)=>tone(f,0,.55+i*.05,"sine",.30,f*0.55));
+  tone(180,0,.18,"square",.20,50);
+}
+function sfxFanfare(){ if(!soundOn) return;
+  const seq=[[523.25,0,.18],[523.25,.18,.18],[523.25,.36,.18],[659.25,.54,.42],[783.99,.9,.24],[659.25,1.14,.24],[783.99,1.38,.7]];
+  seq.forEach(n=>tone(n[0],n[1],n[2],"triangle",.2));
+  tone(1046.5,1.38,.9,"square",.12); tone(1318.5,1.45,.9,"square",.09);
+  noise(1.38,.6,.2,4000);
+}
+
+/* ═══════════════ SPEECH ═══════════════ */
+let voices = [];
+function loadVoices(){
+  if(!("speechSynthesis" in window)) return;
+  const all = speechSynthesis.getVoices() || [];
+  const en = all.filter(v=>/^en/i.test(v.lang));
+  voices = en.length ? en : all;
+  const sel = $("voiceSel");
+  sel.innerHTML = "";
+  voices.forEach((v,i)=>{
+    const o = document.createElement("option");
+    o.value = i; o.textContent = v.name.replace(/\s*\(.*\)\s*/," ").trim() + " · " + v.lang;
+    sel.appendChild(o);
+  });
+  if(!voices.length){ const o=document.createElement("option"); o.textContent="Default voice"; sel.appendChild(o); }
+  fitBW(0);   /* voice list changes the topbar width -> re-fit the board */
+}
+function speak(txt){
+  if(!voiceOn || !("speechSynthesis" in window)) return;
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(txt);
+    u.lang = "en-US"; u.rate = .85; u.pitch = 1;
+    const v = voices[parseInt($("voiceSel").value,10)];
+    if(v) u.voice = v;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+if("speechSynthesis" in window){ loadVoices(); speechSynthesis.onvoiceschanged = loadVoices; }
+
+/* ═══════════════ RENDER ═══════════════ */
+function buildPlayers(){
+  playersEl.innerHTML = "";
+  TEAMS.forEach((t,i)=>{
+    const d = document.createElement("div");
+    d.className = "team"; d.dataset.i = i;
+    d.innerHTML =
+      '<div class="trow"><span class="dot" style="background:'+t.color+'"></span>' +
+      '<span class="nm">'+esc(t.name)+'</span><span class="arrow">◀</span></div>' +
+      '<div class="trow2"><span class="sc">0</span><span class="cn">🪙 0</span></div>';
+    playersEl.appendChild(d);
+  });
+}
+/* long words get a smaller clamp so they never break mid-word */
+function wordSize(en){
+  const d = en.length <= 6 ? 4.6 : en.length <= 9 ? 6 : en.length <= 13 ? 7 : 8;
+  return "clamp(12px, calc(var(--cw)/"+d+"), 34px)";
+}
+function buildBoard(){
+  boardEl.innerHTML = "";
+  deck.forEach((c,i)=>{
+    const d = document.createElement("div");
+    d.className = "card"; d.dataset.i = i;
+    d.innerHTML =
+      '<div class="card-inner">' +
+        '<div class="face back"><div class="num">'+(i+1)+'</div><div class="pick">Pick me!</div></div>' +
+        '<div class="face front">' +
+          '<div class="tag">'+(c.type==="word"?"WORD":c.emoji)+'</div>' +
+          (c.type==="word"
+            ? '<div class="word" style="font-size:'+wordSize(c.en)+'">'+esc(c.en)+'</div>'
+            : '<div class="act-emoji">'+c.emoji+'</div><div class="act-name">'+esc(c.label)+'</div>') +
+          '<div class="tick">✓</div>' +
+        '</div>' +
+      '</div>';
+    boardEl.appendChild(d);
+  });
+}
+function updateScoreboard(popIdx){
+  const max = Math.max.apply(null, TEAMS.map(t=>t.score));
+  TEAMS.forEach((t,i)=>{
+    const el = playersEl.children[i];
+    el.classList.toggle("turn", i===cur && !gameOver);
+    el.classList.toggle("lag", i!==cur && t.score < max);
+    const sc = el.querySelector(".sc");
+    sc.textContent = t.score;
+    el.querySelector(".cn").textContent = "🪙 " + t.coins;
+    if(popIdx === i){ sc.classList.remove("pop"); void sc.offsetWidth; sc.classList.add("pop"); }
+  });
+}
+function setStatus(html){ statusEl.innerHTML = html; }
+const totalRounds = () => Math.ceil(deck.length / TEAMS.length);
+function turnStatus(){
+  const round = Math.min(totalRounds(), Math.floor(used / TEAMS.length) + 1);
+  setStatus('🔁 Round <b>'+round+'</b>/'+totalRounds()+' · <b>'+TEAMS[cur].name+'</b> team\u2019s turn — click a card to flip!');
+}
+function setBar(html){ barEl.innerHTML = html; barEl.classList.add("show"); }
+function hideBar(){ barEl.classList.remove("show"); barEl.innerHTML = ""; }
+function markDone(i, isAct){
+  const el = boardEl.children[i];
+  el.classList.remove("q");
+  el.classList.add("done"); if(isAct) el.classList.add("act");
+  el.classList.add("hit"); setTimeout(()=>el.classList.remove("hit"), 450);
+}
+const isLastCard = () => used >= deck.length;
+
+/* ═══════════════ GAME FLOW ═══════════════ */
+function flip(i){
+  if(gameOver || waiting || lock) return;
+  const c = deck[i]; if(!c || c.flipped) return;
+  c.flipped = true; used++;
+  boardEl.children[i].classList.add("flipped");
+  boardEl.children[i].classList.add("q");
+  sfxClick();
+  lock = true;
+  if(c.type === "word") startWord(c, i); else doAction(c, i);
+}
+
+function startWord(c, i){
+  const wrongs = WORDS.filter(w=>w.def !== c.def).map(w=>w.def);
+  const wrong = wrongs[Math.floor(Math.random()*wrongs.length)];
+  q = { card:i, team:cur, correct:c.def, en:c.en, answered:false };
+  speak(c.en);
+  setStatus('🔊 Listen & choose: <b>'+esc(c.en)+'</b> — <b>'+TEAMS[cur].name+'</b> team');
+  setBar(
+    '<div class="barinfo">What does <b>'+esc(c.en)+'</b> mean? <span style="color:#a9c8e6">('+TEAMS[cur].name+' team)</span></div>' +
+    '<div class="opts">' +
+      shuffle([c.def, wrong]).map(o=>'<button class="opt" data-def="'+esc(o)+'">'+esc(o)+'</button>').join("") +
+    '</div>' +
+    '<button class="hear" id="hearBtn">🔊 Hear it again</button>'
+  );
+  barEl.querySelectorAll(".opt").forEach(b=> b.onclick = ()=> answer(b));
+  $("hearBtn").onclick = ()=>{ sfxClick(); speak(c.en); };
+}
+
+function answer(btn){
+  if(!lock || !q || q.answered) return;              /* guard against double clicks */
+  q.answered = true;
+  barEl.querySelectorAll(".opt").forEach(b=>{
+    b.disabled = true;
+    if(b.dataset.def === q.correct) b.classList.add("right");
+    else if(b === btn) b.classList.add("wrong");
+  });
+  const team = TEAMS[q.team];
+  const last = isLastCard();
+  if(right(btn)){
+    team.score += 20; team.coins += 1;
+    markDone(q.card, false);
+    sfxCorrect();
+    updateScoreboard(q.team);
+    setStatus('✅ Correct! <b>'+team.name+'</b> +20 points 🪙 +1 coin');
+    /* the final card stays on screen 4 seconds before the result screen */
+    setBar(last
+      ? '<div class="barinfo good">✅ Correct! +20 points 🪙 +1 coin — final card, game over shortly…</div>'
+      : '<div class="barinfo good">✅ Correct! +20 points 🪙 +1 coin — moving on…</div>');
+    setTimeout(nextTurn, last ? 4000 : 1400);
+  }else{
+    team.score -= 10;
+    markDone(q.card, false);
+    sfxWrong();
+    updateScoreboard(q.team);
+    waiting = true;                                   /* locked: cannot skip without Next ▶ */
+    setStatus('❌ Not quite — the correct answer is <b>“'+esc(q.correct)+'”</b>');
+    setBar('<div class="barinfo bad">❌ The correct answer is: “'+esc(q.correct)+'” — press Next ▶</div>' +
+           '<button class="next" id="nextBtn">Next ▶</button>');
+    $("nextBtn").onclick = ()=>{ sfxClick(); nextTurn(last ? 4000 : 0); };
+  }
+}
+function right(btn){ return btn.dataset.def === q.correct; }
+
+function doAction(c, i){
+  waiting = true;
+  markDone(i, true);
+  const team = TEAMS[cur];
+  const last = isLastCard();
+  const result = html => setBar('<div class="barinfo">'+html+'</div><button class="next" id="nextBtn">Next ▶</button>');
+  const finish = () => {
+    updateScoreboard();
+    const nb = $("nextBtn");
+    if(nb) nb.onclick = ()=>{ sfxClick(); nextTurn(last ? 4000 : 0); };
+  };
+
+  switch(c.kind){
+    case "plus50":
+      team.score += 50; sfxBig();
+      setStatus('🎯 <b>'+team.name+'</b> hits +50 points!');
+      result('🎯 <b>'+team.name+'</b> gets <b>+50 points</b>!'); finish();
+      break;
+    case "lucky": {
+      const pts = [10,30,50][Math.floor(Math.random()*3)];
+      team.score += pts; sfxLucky();
+      setStatus('🍀 Lucky! <b>'+team.name+'</b> +'+pts+' points');
+      result('🍀 Lucky! <b>'+team.name+'</b> gets <b>+'+pts+' points</b>!'); finish();
+      break;
+    }
+    case "double":
+      team.score = team.score * 2; sfxBig();
+      setStatus('⭐ <b>'+team.name+'</b>\u2019s score doubled!');
+      result('⭐ <b>'+team.name+'</b>\u2019s score is doubled → <b>'+team.score+'</b>'); finish();
+      break;
+    case "bomb":
+      team.score = 0; sfxBomb();
+      setStatus('💣 Boom! <b>'+team.name+'</b>\u2019s score is now 0');
+      result('💣 Boom! <b>'+team.name+'</b>\u2019s score is now <b>0</b>'); finish();
+      break;
+    case "give":
+      pickTeam('🎁 To which team do you give points?', cur, t=>{
+        pickAmount(t, amt=>{
+          t.score += amt; sfxLucky();
+          setStatus('🎁 <b>'+team.name+'</b> gave '+amt+' points to <b>'+t.name+'</b>');
+          result('🎁 <b>'+team.name+'</b> gives <b>'+amt+' points</b> to <b>'+t.name+'</b>!'); finish();
+        });
+      });
+      break;
+    case "steal":
+      pickTeam('🐴 Which team do you steal from?', cur, t=>{
+        const amt = 30;
+        t.score -= amt; team.score += amt; sfxSteal();
+        setStatus('🐴 <b>'+team.name+'</b> stole '+amt+' points from <b>'+t.name+'</b>');
+        result('🐴 <b>'+team.name+'</b> steals <b>'+amt+' points</b> from <b>'+t.name+'</b>!'); finish();
+      });
+      break;
+    case "swap":
+      pickTeam('🔄 Which team do you swap scores with?', cur, t=>{
+        const tmp = t.score; t.score = team.score; team.score = tmp; sfxClick();
+        setStatus('🔄 Scores swapped: <b>'+team.name+'</b> ↔ <b>'+t.name+'</b>');
+        result('🔄 Scores swapped! <b>'+team.name+'</b> ↔ <b>'+t.name+'</b>'); finish();
+      });
+      break;
+  }
+}
+
+function pickTeam(title, exclude, cb){
+  setStatus(title);
+  setBar('<div class="barinfo">'+esc(title)+'</div><div class="picker">' +
+    TEAMS.map((t,i)=>'<button class="pbtn" data-t="'+i+'" style="background:'+t.color+'"' +
+      (i===exclude?' disabled title="That is your team"':'')+'>'+esc(t.name)+'</button>').join("") +
+    '</div>');
+  barEl.querySelectorAll(".pbtn").forEach(b=>{
+    if(b.disabled) return;
+    b.onclick = ()=>{ sfxClick(); cb(TEAMS[parseInt(b.dataset.t,10)]); };
+  });
+}
+function pickAmount(t, cb){
+  setStatus('🎁 How many points for <b>'+t.name+'</b>?');
+  setBar('<div class="barinfo">🎁 Give <b>'+esc(t.name)+'</b> how many points?</div><div class="picker">' +
+    [10,20,50].map(a=>'<button class="pbtn" data-a="'+a+'" style="background:#1769aa">+'+a+'</button>').join("") +
+    '</div>');
+  barEl.querySelectorAll(".pbtn").forEach(b=>{
+    b.onclick = ()=>{ sfxClick(); cb(parseInt(b.dataset.a,10)); };
+  });
+}
+
+/* endDelay: 4000 keeps the last card (and its answer feedback) visible before the result screen */
+function nextTurn(endDelay){
+  lock = false; waiting = false; q = null;
+  if(isLastCard()){
+    setStatus('🏁 Final card! Game over in a moment…');
+    if(!endDelay) hideBar();
+    setTimeout(endGame, endDelay || 0);
+    return;
+  }
+  hideBar();
+  cur = (cur + 1) % TEAMS.length;
+  updateScoreboard();
+  turnStatus();
+}
+
+/* ═══════════════ END / MODAL ═══════════════ */
+function endGame(){
+  gameOver = true;
+  updateScoreboard();
+  const ranked = TEAMS.map((t,i)=>({t:t,i:i})).sort((a,b)=> (b.t.score-a.t.score) || (b.t.coins-a.t.coins));
+  $("winnerLine").textContent = "Winner: " + ranked[0].t.name + " Team!";
+  $("winnerSub").textContent = "Game over · " + THEME + " · all " + deck.length + " cards used";
+  $("rankList").innerHTML = ranked.map((r,k)=>
+    '<div class="rank"><span class="medal">'+MEDALS[k]+'</span>' +
+    '<span class="rdot" style="background:'+r.t.color+'"></span>' +
+    '<span class="rname">'+esc(r.t.name)+'</span>' +
+    '<span class="rscore">'+r.t.score+' pts</span>' +
+    '<span class="rcoin">🪙 '+r.t.coins+'</span></div>').join("");
+  modalEl.classList.add("show");
+  setStatus('🏆 Game over! <b>'+ranked[0].t.name+'</b> team wins with <b>'+ranked[0].t.score+'</b> points!');
+  sfxFanfare();
+  speak("Game over! " + ranked[0].t.name + " team wins!");
+}
+
+/* ═══════════════ FIT: board must never hide under the fixed answer bar ═══════════════ */
+function fitBW(iter){
+  iter = iter || 0;
+  const board = document.querySelector(".board");
+  if(!board) return;
+  const cs = getComputedStyle(board);
+  const cols = Math.max(1, cs.gridTemplateColumns.split(/\s+/).filter(s=>s && s!=="none").length);
+  const rows = Math.max(1, Math.ceil((deck.length || 15) / cols));
+  const gap  = parseFloat(cs.gap) || 10;
+  const above  = board.offsetTop;                                  /* topbar + scoreboard + status */
+  const reserve = window.innerWidth <= 900 ? 225 : 180;            /* tallest answer-bar state + safety */
+  const avail = window.innerHeight - above - reserve - 4;          /* room left for the board */
+  /* boardH = rows * 0.75 * cardW + (rows-1)*gap  <=  avail  ->  solve for board width */
+  const bwFromH = ((avail - (rows-1)*gap) * cols) / (0.75 * rows) + (cols-1)*gap;
+  const bwMax = Math.min(1400, document.documentElement.clientWidth - 20);
+  const bw = Math.max(320, Math.min(bwMax, bwFromH));
+  const cw = (bw - (cols-1)*gap) / cols;
+  const root = document.documentElement.style;
+  const prevBw = root.getPropertyValue("--bw");
+  const nextBw = Math.round(bw) + "px";
+  root.setProperty("--bw", nextBw);
+  root.setProperty("--cw", Math.round(cw) + "px");
+  root.setProperty("--reserve", reserve + "px");
+  /* the chrome above the board can change after this run (voice list loads later,
+     topbar re-wraps): re-measure until settled. Hard cap = no endless loop. */
+  const nowAbove = board.offsetTop;                                /* forces reflow */
+  if(iter < 6 && (prevBw !== nextBw || Math.abs(nowAbove - above) >= 1)){
+    requestAnimationFrame(()=>fitBW(iter + 1));
+  }
+}
+window.addEventListener("resize", ()=>fitBW(0));
+window.addEventListener("load", ()=>fitBW(0));
+
+/* ═══════════════ RESET / CONTROLS ═══════════════ */
+function reset(){
+  deck = shuffle(
+    WORDS.map(w=>({type:"word", en:w.en, def:w.def}))            /* 7 word cards */
+      .concat(ACTIONS.map(a=>({type:"action", kind:a.kind, emoji:a.emoji, label:a.label})))  /* 8 action cards */
+  );
+  TEAMS.forEach(t=>{ t.score = 0; t.coins = 0; });
+  cur = 0; used = 0; lock = false; waiting = false; gameOver = false; q = null;
+  modalEl.classList.remove("show");
+  hideBar();
+  buildBoard(); buildPlayers(); updateScoreboard(); turnStatus();
+  fitBW();
+}
+
+boardEl.addEventListener("click", e=>{
+  const el = e.target.closest(".card");
+  if(!el) return;
+  flip(parseInt(el.dataset.i, 10));
+});
+$("btnRestart").onclick = ()=>{
+  sfxClick();
+  if(window.confirm("Restart the game? All scores will be cleared.")) reset();
+};
+$("btnSound").onclick = ()=>{
+  soundOn = !soundOn; ac();
+  const b = $("btnSound");
+  b.textContent = "🔊 Sound: " + (soundOn ? "ON" : "OFF");
+  b.classList.toggle("off", !soundOn);
+  if(soundOn) sfxClick();
+};
+$("btnVoice").onclick = ()=>{
+  voiceOn = !voiceOn;
+  if(!voiceOn && "speechSynthesis" in window) speechSynthesis.cancel();
+  const b = $("btnVoice");
+  b.textContent = "🗣 Voice: " + (voiceOn ? "ON" : "OFF");
+  b.classList.toggle("off", !voiceOn);
+  sfxClick();
+};
+$("voiceSel").onchange = ()=>{ sfxClick(); speak(WORDS[0].en); };
+$("btnAgain").onclick = ()=>{ sfxClick(); reset(); };
+$("btnExit").onclick = ()=>{ sfxClick(); modalEl.classList.remove("show"); };
+document.addEventListener("keydown", e=>{
+  if((e.key === "Enter" || e.key === " ") && waiting){
+    const nb = $("nextBtn");
+    if(nb){ e.preventDefault(); sfxClick(); nextTurn(isLastCard() ? 4000 : 0); }
+  }
+});
+
+$("themeName").textContent = THEME;
+document.title = "BaaBoozle · " + THEME;
+reset();
+</script>
+</body>
+</html>
