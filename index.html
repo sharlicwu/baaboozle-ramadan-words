@@ -38,7 +38,8 @@ body{
   flex-wrap:wrap; gap:8px; background:var(--panel);
   border:2px solid #1d4670; border-radius:12px; padding:7px 12px;
 }
-.brand{font-size:clamp(14px,1.7vw,21px);font-weight:800;color:var(--gold);letter-spacing:.3px}
+.brand{font-size:clamp(14px,1.7vw,21px);font-weight:800;color:var(--gold);letter-spacing:.3px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .brand span{color:#eaf3ff}
 .tools{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .btn{
@@ -82,10 +83,37 @@ option{background:#0e2a47;color:#eaf3ff}
   font-size:clamp(12px,1.6vw,17px);font-weight:700;
 }
 .status b{color:var(--gold)}
+.sline{width:100%;text-align:center}   /* single flex child: wraps at word boundaries, not per fragment */
 
 /* ═══════════ BOARD 5 × 3 ═══════════ */
 .board{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 @media (max-width:900px){ .board{gap:5px} }
+/* ── narrow window (link opened from PPT / small screen): compact chrome, no wrapping ── */
+@media (max-width:600px){
+  .topbar{padding:5px 8px;gap:5px}
+  .brand{font-size:13px}
+  .tools{gap:4px}
+  .btn{padding:4px 8px;font-size:11px}
+  select.btn{max-width:140px;padding:4px 6px}
+  .players{gap:4px}
+  .team{padding:4px 2px}
+  .trow{gap:3px}
+  .dot{width:8px;height:8px}
+  .nm{font-size:clamp(9px,2.3vw,13px)}
+  .arrow{font-size:10px}
+  .trow2{gap:5px}
+  .status{font-size:clamp(10px,2.6vw,14px);min-height:34px;padding:5px 6px;gap:8px}
+  .bar{padding:8px 8px;min-height:80px}
+  .opt{padding:9px 10px}
+  .pbtn{padding:8px 10px;min-width:80px}
+  .next{padding:9px 20px}
+}
+@media (max-width:420px){
+  .brand{font-size:12px}
+  .nm{font-size:10px}
+  .btn{padding:4px 6px;font-size:10.5px}
+  select.btn{max-width:110px}
+}
 .card{position:relative;aspect-ratio:4/3;perspective:900px;cursor:pointer}
 .card.locked{cursor:default}
 .card-inner{
@@ -210,7 +238,7 @@ option{background:#0e2a47;color:#eaf3ff}
 </header>
 
 <section class="players" id="players"></section>
-<section class="status" id="status"></section>
+<section class="status" id="status"><div class="sline" id="sline"></div></section>
 <main class="board" id="board"></main>
 
 <div class="bar" id="bar"></div>
@@ -406,7 +434,7 @@ function updateScoreboard(popIdx){
     if(popIdx === i){ sc.classList.remove("pop"); void sc.offsetWidth; sc.classList.add("pop"); }
   });
 }
-function setStatus(html){ statusEl.innerHTML = html; }
+function setStatus(html){ $("sline").innerHTML = html; }
 const totalRounds = () => Math.ceil(deck.length / TEAMS.length);
 function turnStatus(){
   const round = Math.min(totalRounds(), Math.floor(used / TEAMS.length) + 1);
