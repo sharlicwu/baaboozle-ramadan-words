@@ -626,10 +626,16 @@ function doAction(c, i){
       break;
     case "steal":
       pickTeam('🐴 Which team do you steal from?', cur, t=>{
-        const amt = 30;
-        t.score -= amt; team.score += amt; sfxSteal();
-        setStatus('🐴 <b>'+team.name+'</b> stole '+amt+' points from <b>'+t.name+'</b>');
-        result('🐴 <b>'+team.name+'</b> steals <b>'+amt+' points</b> from <b>'+t.name+'</b>!'); finish();
+        if(t.score <= 0){
+          setStatus('🐴 <b>'+t.name+'</b> has 0 points — nothing to steal!');
+          result('🐴 <b>'+t.name+'</b> has <b>0 points</b> — nothing to steal!'); finish();
+          return;
+        }
+        pickStealAmount(t, amt=>{
+          t.score -= amt; team.score += amt; sfxSteal();
+          setStatus('🐴 <b>'+team.name+'</b> stole '+amt+' points from <b>'+t.name+'</b>');
+          result('🐴 <b>'+team.name+'</b> steals <b>'+amt+' points</b> from <b>'+t.name+'</b>!'); finish();
+        });
       });
       break;
     case "swap":
@@ -657,6 +663,21 @@ function pickAmount(t, cb){
   setStatus('🎁 How many points for <b>'+t.name+'</b>?');
   setBar('<div class="barinfo">🎁 Give <b>'+esc(t.name)+'</b> how many points?</div><div class="picker">' +
     [10,20,50].map(a=>'<button class="pbtn" data-a="'+a+'" style="background:#1769aa">+'+a+'</button>').join("") +
+    '</div>');
+  barEl.querySelectorAll(".pbtn").forEach(b=>{
+    b.onclick = ()=>{ sfxClick(); cb(parseInt(b.dataset.a,10)); };
+  });
+}
+/* steal: player picks how much — never more than the victim actually has */
+function pickStealAmount(t, cb){
+  const FIXED = [10,20,30,50];
+  const opts = FIXED.filter(a=>a<=t.score);
+  if(opts.indexOf(t.score) < 0) opts.push(t.score);        /* "All" when the total isn't listed */
+  const isAll = a => (a===t.score && FIXED.indexOf(a) < 0);
+  setStatus('🐴 How many points to steal from <b>'+t.name+'</b>?');
+  setBar('<div class="barinfo">🐴 Steal how many points from <b>'+esc(t.name)+'</b>? — they have <b>'+t.score+'</b></div><div class="picker">' +
+    opts.map(a=>'<button class="pbtn" data-a="'+a+'" style="background:#1769aa">'+
+      (isAll(a) ? 'All ('+a+')' : a)+'</button>').join("") +
     '</div>');
   barEl.querySelectorAll(".pbtn").forEach(b=>{
     b.onclick = ()=>{ sfxClick(); cb(parseInt(b.dataset.a,10)); };
