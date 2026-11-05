@@ -30,7 +30,10 @@ body{
 }
 @media (max-width:900px){ body{ gap:6px; } }
 
-.topbar,.players,.status,.board{ width:100%; max-width:var(--bw); }
+.players,.status,.board{ width:100%; max-width:var(--bw); }
+/* the header needs ~700px or its buttons wrap onto a 2nd row (which shrinks the board
+   and makes it wrap again): give the chrome a floor, the board keeps the height-capped --bw */
+.topbar,.players,.status{ width:100%; max-width:max(var(--bw), 700px); }
 
 /* ═══════════ TOPBAR ═══════════ */
 .topbar{
@@ -198,13 +201,6 @@ option{background:#0e2a47;color:#eaf3ff}
 .b2{background:#17395f;color:#eaf3ff;border:2px solid #2d6da8}
 .big:hover{transform:translateY(-2px)}
 /* ═══════════ RESPONSIVE (kept last so every override wins over the base rules above) ═══════════ */
-/* ── short-and-wide (typical laptop 1366x768): topbar stays on 1 row, board gains width ── */
-@media (max-height:860px) and (min-width:901px){
-  .brand{font-size:16px}
-  .btn{padding:5px 10px;font-size:13px}
-  select.btn{max-width:170px}
-  .tools{gap:4px}
-}
 /* ── medium (small laptop / PPT link window): moderate compaction, topbar stays 1 row ── */
 @media (max-width:900px){
   .topbar{padding:5px 10px}
@@ -216,6 +212,22 @@ option{background:#0e2a47;color:#eaf3ff}
   .trow{gap:4px}
   .nm{font-size:clamp(10px,1.9vw,15px)}
   .status{font-size:clamp(11px,1.9vw,15px);min-height:38px}
+}
+/* ── short window (real laptop browser: 1366x768 minus tabs/address bar ≈ 630px tall):
+      compact the header so it fits the board width — topbar never folds to a 2nd row ── */
+@media (max-height:860px) and (min-width:700px){
+  .topbar{padding:5px 10px;gap:6px}
+  .brand{font-size:14px}
+  .btn{padding:4px 7px;font-size:11.5px}
+  select.btn{max-width:118px}
+  .tools{gap:4px}
+  .status{min-height:36px}
+  body{gap:6px}
+}
+/* ── desktop widths: header items never wrap (brand ellipsizes instead of folding) ── */
+@media (min-width:700px){
+  .topbar{flex-wrap:nowrap}
+  .tools{flex-wrap:nowrap;flex-shrink:0}
 }
 /* ── narrow window (link opened from PPT / small screen): compact chrome, no wrapping ── */
 @media (max-width:700px){
