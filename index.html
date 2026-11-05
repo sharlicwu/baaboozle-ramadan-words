@@ -9,7 +9,7 @@
 :root{
   --bg:#0b1c30; --panel:#102842; --gold:#ffd600; --cyan:#4cc9ff;
   /* --bw / --cw are recomputed at runtime so the 5x3 board always fits the window */
-  --bw: min(1400px, max(320px, calc((100vh - 330px) * 2.1)));
+  --bw: min(1560px, max(320px, calc((100vh - 330px) * 2.1)));
   --cw: calc((var(--bw) - 40px) / 5);
   --reserve: 180px;
 }
@@ -26,7 +26,7 @@ body{
   background:var(--bg); color:#eaf3ff; min-height:100%; overflow-y:auto;
   font-family:"Segoe UI", system-ui, -apple-system, Arial, sans-serif;
   display:flex; flex-direction:column; align-items:center; gap:8px;
-  padding:10px 10px var(--reserve);   /* reserve = answer-bar space, nothing hides under it */
+  padding:8px 8px var(--reserve);   /* reserve = answer-bar space, nothing hides under it */
 }
 @media (max-width:900px){ body{ gap:6px; } }
 
@@ -55,8 +55,8 @@ option{background:#0e2a47;color:#eaf3ff}
 /* ═══════════ SCOREBOARD ═══════════ */
 .players{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
 .team{
-  background:var(--panel);border:2px solid #1d4670;border-radius:12px;
-  padding:5px 4px;text-align:center;position:relative;min-width:0;
+  background:var(--panel);border:2px solid #1d4670;border-radius:10px;
+  padding:2px 4px;text-align:center;position:relative;min-width:0;
 }
 .team.turn{animation:blink 1s infinite}
 @keyframes blink{
@@ -69,16 +69,16 @@ option{background:#0e2a47;color:#eaf3ff}
 .nm{font-size:clamp(11px,2.2vw,17px);font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .arrow{display:none;font-size:13px;color:var(--gold);font-weight:900}
 .team.turn .arrow{display:inline}
-.trow2{display:flex;align-items:baseline;justify-content:center;gap:8px;margin-top:1px}
-.sc{font-size:clamp(15px,2.2vw,23px);font-weight:900;color:var(--gold);line-height:1.1}
+.trow2{display:flex;align-items:baseline;justify-content:center;gap:6px;margin-top:0;white-space:nowrap}
+.sc{font-size:clamp(14px,2vw,22px);font-weight:900;color:var(--gold);line-height:1;white-space:nowrap}
 .sc.pop{animation:pop .35s ease}
 @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.45);color:#fff}100%{transform:scale(1)}}
-.cn{font-size:clamp(10px,1.4vw,14px);color:#cfe6ff;font-weight:700}
+.cn{font-size:clamp(9px,1.3vw,13px);color:#cfe6ff;font-weight:700;white-space:nowrap}
 
 /* ═══════════ STATUS ═══════════ (one line only — legend row removed) */
 .status{
   background:var(--panel);border:2px solid #1d4670;border-radius:12px;
-  min-height:44px;display:flex;align-items:center;justify-content:center;
+  min-height:40px;display:flex;align-items:center;justify-content:center;
   gap:14px;padding:6px 10px;text-align:center;
   font-size:clamp(12px,1.6vw,17px);font-weight:700;
 }
@@ -88,32 +88,6 @@ option{background:#0e2a47;color:#eaf3ff}
 /* ═══════════ BOARD 5 × 3 ═══════════ */
 .board{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
 @media (max-width:900px){ .board{gap:5px} }
-/* ── narrow window (link opened from PPT / small screen): compact chrome, no wrapping ── */
-@media (max-width:600px){
-  .topbar{padding:5px 8px;gap:5px}
-  .brand{font-size:13px}
-  .tools{gap:4px}
-  .btn{padding:4px 8px;font-size:11px}
-  select.btn{max-width:140px;padding:4px 6px}
-  .players{gap:4px}
-  .team{padding:4px 2px}
-  .trow{gap:3px}
-  .dot{width:8px;height:8px}
-  .nm{font-size:clamp(9px,2.3vw,13px)}
-  .arrow{font-size:10px}
-  .trow2{gap:5px}
-  .status{font-size:clamp(10px,2.6vw,14px);min-height:34px;padding:5px 6px;gap:8px}
-  .bar{padding:8px 8px;min-height:80px}
-  .opt{padding:9px 10px}
-  .pbtn{padding:8px 10px;min-width:80px}
-  .next{padding:9px 20px}
-}
-@media (max-width:420px){
-  .brand{font-size:12px}
-  .nm{font-size:10px}
-  .btn{padding:4px 6px;font-size:10.5px}
-  select.btn{max-width:110px}
-}
 .card{position:relative;aspect-ratio:4/3;perspective:900px;cursor:pointer}
 .card.locked{cursor:default}
 .card-inner{
@@ -142,8 +116,8 @@ option{background:#0e2a47;color:#eaf3ff}
   overflow-wrap:break-word;word-break:normal;hyphens:auto;max-width:100%}
 .tag{position:absolute;top:4px;left:6px;font-size:clamp(8px,calc(var(--cw)*.1),13px);
   font-weight:800;color:#9fd8ff;letter-spacing:.5px}
-.act-emoji{font-size:clamp(20px,calc(var(--cw)*.4),46px);line-height:1}
-.act-name{font-size:clamp(9px,calc(var(--cw)*.14),17px);font-weight:900;overflow-wrap:anywhere}
+.act-emoji{font-size:clamp(16px,calc(var(--cw)*.3),38px);line-height:1}
+.act-name{font-size:clamp(9px,calc(var(--cw)*.12),15px);font-weight:900;line-height:1.1;overflow-wrap:anywhere}
 .tick{position:absolute;top:3px;right:6px;font-size:clamp(11px,calc(var(--cw)*.18),22px);display:none}
 /* completed cards: change background/color directly (no filter/opacity, frame stays vivid) */
 .card.done .front{background:#08284a;border-color:var(--cyan);color:#dff2ff;box-shadow:none}
@@ -157,7 +131,7 @@ option{background:#0e2a47;color:#eaf3ff}
 .bar{
   position:fixed;left:0;right:0;bottom:0;z-index:60;display:none;
   background:#0d2340;border-top:3px solid var(--gold);
-  padding:10px 12px;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:8px 10px;justify-content:center;align-items:center;gap:10px;flex-wrap:wrap;
   box-shadow:0 -8px 24px rgba(0,0,0,.55);min-height:96px;
 }
 .bar.show{display:flex}
@@ -168,7 +142,7 @@ option{background:#0e2a47;color:#eaf3ff}
 .opts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;width:100%}
 .opt{
   flex:1 1 240px;max-width:420px;min-width:0;background:#17395f;color:#eaf3ff;
-  border:2px solid #2d6da8;border-radius:11px;padding:11px 14px;
+  border:2px solid #2d6da8;border-radius:11px;padding:9px 12px;
   font-size:clamp(12px,1.5vw,17px);font-weight:700;line-height:1.25;
   cursor:pointer;font-family:inherit;text-align:center;overflow-wrap:anywhere;
 }
@@ -179,19 +153,19 @@ option{background:#0e2a47;color:#eaf3ff}
 .picker{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;width:100%}
 .pbtn{
   border-radius:11px;border:2px solid rgba(255,255,255,.35);color:#fff;
-  padding:10px 14px;font-size:clamp(12px,1.5vw,16px);font-weight:900;cursor:pointer;
+  padding:8px 12px;font-size:clamp(12px,1.5vw,16px);font-weight:900;cursor:pointer;
   font-family:inherit;display:flex;align-items:center;gap:7px;min-width:96px;justify-content:center;
 }
 .pbtn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.5)}
 .pbtn:disabled{opacity:.28;cursor:default}
 .hear{
   background:#17395f;border:2px solid #2d6da8;border-radius:11px;color:#eaf3ff;
-  padding:10px 16px;font-size:clamp(12px,1.4vw,16px);font-weight:800;cursor:pointer;font-family:inherit;
+  padding:8px 14px;font-size:clamp(12px,1.4vw,16px);font-weight:800;cursor:pointer;font-family:inherit;
 }
 .hear:hover{border-color:var(--gold);color:var(--gold)}
 .next{
   background:var(--gold);color:#102842;border:none;border-radius:11px;
-  padding:11px 30px;font-size:clamp(14px,1.8vw,20px);font-weight:900;cursor:pointer;
+  padding:9px 26px;font-size:clamp(14px,1.8vw,20px);font-weight:900;cursor:pointer;
   font-family:inherit;box-shadow:0 4px 0 #b39b00;
 }
 .next:hover{transform:translateY(-2px)}
@@ -223,6 +197,65 @@ option{background:#0e2a47;color:#eaf3ff}
 .b1{background:var(--gold);color:#102842;box-shadow:0 4px 0 #b39b00}
 .b2{background:#17395f;color:#eaf3ff;border:2px solid #2d6da8}
 .big:hover{transform:translateY(-2px)}
+/* ═══════════ RESPONSIVE (kept last so every override wins over the base rules above) ═══════════ */
+/* ── short-and-wide (typical laptop 1366x768): topbar stays on 1 row, board gains width ── */
+@media (max-height:860px) and (min-width:901px){
+  .brand{font-size:16px}
+  .btn{padding:5px 10px;font-size:13px}
+  select.btn{max-width:170px}
+  .tools{gap:4px}
+}
+/* ── medium (small laptop / PPT link window): moderate compaction, topbar stays 1 row ── */
+@media (max-width:900px){
+  .topbar{padding:5px 10px}
+  .brand{font-size:15px}
+  .btn{padding:5px 9px;font-size:12px}
+  select.btn{max-width:160px}
+  .team{padding:3px 3px}
+  .dot{width:9px;height:9px}
+  .trow{gap:4px}
+  .nm{font-size:clamp(10px,1.9vw,15px)}
+  .status{font-size:clamp(11px,1.9vw,15px);min-height:38px}
+}
+/* ── narrow window (link opened from PPT / small screen): compact chrome, no wrapping ── */
+@media (max-width:700px){
+  .topbar{padding:5px 8px;gap:5px}
+  .brand{font-size:13px}
+  .tools{gap:4px}
+  .btn{padding:4px 8px;font-size:11px}
+  select.btn{max-width:140px;padding:4px 6px}
+  .players{gap:4px}
+  .team{padding:4px 2px}
+  .trow{gap:3px}
+  .dot{width:8px;height:8px}
+  .nm{font-size:clamp(9px,2.3vw,13px)}
+  .arrow{font-size:10px}
+  .trow2{gap:5px}
+  .status{font-size:clamp(10px,2.6vw,14px);min-height:34px;padding:5px 6px;gap:8px}
+  .bar{padding:8px 8px;min-height:80px}
+  .opt{padding:9px 10px}
+  .pbtn{padding:8px 10px;min-width:80px}
+  .next{padding:9px 20px}
+}
+@media (max-width:420px){
+  .brand{font-size:12px}
+  .nm{font-size:10px}
+  .btn{padding:4px 6px;font-size:10.5px}
+  select.btn{max-width:110px}
+}
+@media (max-width:360px){
+  .brand{font-size:11px}
+  .nm{font-size:9px}
+  .dot{width:7px;height:7px}
+  .trow{gap:2px}
+  .sc{font-size:13px}
+  .cn{font-size:9px}
+  select.btn{max-width:96px}
+  .tools{gap:3px}
+  .face{padding:2px}
+  .act-emoji{font-size:14px}
+  .act-name{font-size:8.5px}
+}
 </style>
 </head>
 <body>
@@ -293,6 +326,7 @@ let deck = [], cur = 0, used = 0;
 let lock = false;      // true while a question / action is on screen (blocks flipping)
 let waiting = false;   // true after a wrong answer (blocks everything until Next ▶)
 let gameOver = false;
+let endTimer = null;    // pending end-of-game timer (cleared on reset)
 let q = null;          // current question object
 let soundOn = true, voiceOn = true;
 
@@ -412,7 +446,7 @@ function buildBoard(){
       '<div class="card-inner">' +
         '<div class="face back"><div class="num">'+(i+1)+'</div><div class="pick">Pick me!</div></div>' +
         '<div class="face front">' +
-          '<div class="tag">'+(c.type==="word"?"WORD":c.emoji)+'</div>' +
+          (c.type==="word" ? "" : '<div class="tag">'+c.emoji+'</div>') +
           (c.type==="word"
             ? '<div class="word" style="font-size:'+wordSize(c.en)+'">'+esc(c.en)+'</div>'
             : '<div class="act-emoji">'+c.emoji+'</div><div class="act-name">'+esc(c.label)+'</div>') +
@@ -602,8 +636,9 @@ function nextTurn(endDelay){
   lock = false; waiting = false; q = null;
   if(isLastCard()){
     setStatus('🏁 Final card! Game over in a moment…');
-    if(!endDelay) hideBar();
-    setTimeout(endGame, endDelay || 0);
+    hideBar();                    // never leave a Next button up: re-pressing would queue extra end-game timers
+    if(endTimer) clearTimeout(endTimer);
+    endTimer = setTimeout(endGame, endDelay || 0);
     return;
   }
   hideBar();
@@ -614,6 +649,7 @@ function nextTurn(endDelay){
 
 /* ═══════════════ END / MODAL ═══════════════ */
 function endGame(){
+  if(gameOver) return;          /* guard: never run twice */
   gameOver = true;
   updateScoreboard();
   const ranked = TEAMS.map((t,i)=>({t:t,i:i})).sort((a,b)=> (b.t.score-a.t.score) || (b.t.coins-a.t.coins));
@@ -645,7 +681,7 @@ function fitBW(iter){
   const avail = window.innerHeight - above - reserve - 4;          /* room left for the board */
   /* boardH = rows * 0.75 * cardW + (rows-1)*gap  <=  avail  ->  solve for board width */
   const bwFromH = ((avail - (rows-1)*gap) * cols) / (0.75 * rows) + (cols-1)*gap;
-  const bwMax = Math.min(1400, document.documentElement.clientWidth - 20);
+  const bwMax = Math.min(1560, document.documentElement.clientWidth - 16);
   const bw = Math.max(320, Math.min(bwMax, bwFromH));
   const cw = (bw - (cols-1)*gap) / cols;
   const root = document.documentElement.style;
@@ -671,6 +707,7 @@ function reset(){
       .concat(ACTIONS.map(a=>({type:"action", kind:a.kind, emoji:a.emoji, label:a.label})))  /* 8 action cards */
   );
   TEAMS.forEach(t=>{ t.score = 0; t.coins = 0; });
+  if(endTimer){ clearTimeout(endTimer); endTimer = null; }
   cur = 0; used = 0; lock = false; waiting = false; gameOver = false; q = null;
   modalEl.classList.remove("show");
   hideBar();
