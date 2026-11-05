@@ -395,10 +395,28 @@ function sfxBomb(){ if(!soundOn) return;
   tone(180,0,.18,"square",.20,50);
 }
 function sfxFanfare(){ if(!soundOn) return;
-  const seq=[[523.25,0,.18],[523.25,.18,.18],[523.25,.36,.18],[659.25,.54,.42],[783.99,.9,.24],[659.25,1.14,.24],[783.99,1.38,.7]];
-  seq.forEach(n=>tone(n[0],n[1],n[2],"triangle",.2));
-  tone(1046.5,1.38,.9,"square",.12); tone(1318.5,1.45,.9,"square",.09);
-  noise(1.38,.6,.2,4000);
+  /* ── award music: drum roll → brass fanfare → march bass + kick → final chord & cymbal (~4s) ── */
+  for(let i=0;i<12;i++) noise(i*.035,.05,.04 + i*.010,2400);            /* drum roll */
+  const mel = [
+    [523.25,0.45,.20],[523.25,0.65,.20],[523.25,0.85,.20],              /* C  C  C  */
+    [783.99,1.05,.40],                                                  /* G        */
+    [880.00,1.45,.20],[783.99,1.65,.20],[880.00,1.85,.20],              /* A  G  A  */
+    [783.99,2.05,.35],                                                  /* G        */
+    [659.25,2.40,.20],[783.99,2.60,.20],                                /* E  G     */
+    [1046.50,2.80,1.15]                                                  /* high C — finish */
+  ];
+  mel.forEach(n=>{
+    tone(n[0],n[1],n[2],"sawtooth",.14);                /* brass lead    */
+    tone(n[0]*1.005,n[1],n[2],"square",.05);            /* detune shimmer */
+    tone(n[0]/2,n[1],n[2],"triangle",.10);              /* octave below   */
+  });
+  [0.45,0.85,1.25,1.65,2.05,2.45].forEach((t,i)=>{      /* march bass + kick */
+    tone(i%2?98.00:65.41,t,.30,"triangle",.15);
+    tone(120,t,.10,"sine",.20,55);
+  });
+  noise(2.80,.9,.18,7000);                                          /* cymbal crash */
+  [523.25,659.25,783.99,1046.50].forEach(f=>tone(f,2.80,1.25,"sawtooth",.07));  /* C major */
+  tone(130.81,2.80,1.30,"triangle",.14);                            /* root        */
 }
 
 /* ═══════════════ SPEECH ═══════════════ */
